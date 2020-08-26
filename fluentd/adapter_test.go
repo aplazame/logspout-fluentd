@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net"
 	"strconv"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -98,6 +99,9 @@ func TestAdapterSuccessfullyWritesToFluentd(t *testing.T) {
 
 			containerID := data[2].(map[string]interface{})["container_id"]
 			assert.Equal(t, container.ID, containerID)
+
+			labelValue := data[2].(map[string]interface{})["container_label_" + strings.ReplaceAll(testLabel, ".", "_")]
+			assert.Equal(t, testLabelValue, labelValue)
 		})
 	}()
 
@@ -114,6 +118,7 @@ func TestAdapterSuccessfullyWritesToFluentd(t *testing.T) {
 		},
 		tagPrefix:      testTag,
 		tagSuffixLabel: testLabel,
+		dockerLabels: "yes",
 	}
 
 	stream := make(chan *router.Message)

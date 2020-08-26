@@ -25,6 +25,7 @@ import (
 	"os"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/fluent/fluent-logger-golang/fluent"
@@ -54,6 +55,7 @@ type Adapter struct {
 	writer         *fluent.Fluent
 	tagPrefix      string
 	tagSuffixLabel string
+	dockerLabels   string
 }
 
 // Stream handles a stream of messages from Logspout. Implements router.logAdapter.
@@ -84,6 +86,13 @@ func (ad *Adapter) Stream(logstream chan *router.Message) {
 			"container_name": message.Container.Name,
 			"source":         message.Source,
 		}
+
+		if len(ad.dockerLabels) > 0 {
+			for label, value := range message.Container.Config.Labels {
+				record["container_label_" + strings.ReplaceAll(label, ".", "_")] = value
+			}
+		}
+
 		log.Println(tag, message.Time, record)
 
 		// Send to fluentd
@@ -175,6 +184,7 @@ func NewAdapter(route *router.Route) (router.LogAdapter, error) {
 		writer:         writer,
 		tagPrefix:      getenv("TAG_PREFIX", "docker"),
 		tagSuffixLabel: getenv("TAG_SUFFIX_LABEL", ""),
+		dockerLabels:   getenv("DOCKER_LABELS", ""),
 	}, nil
 }
 
